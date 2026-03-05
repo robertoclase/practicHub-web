@@ -6,6 +6,25 @@ export interface PaginatedResponse<T> {
   total: number;
 }
 
+export interface DashboardStats {
+  totales: {
+    empresas: number;
+    alumnos: number;
+    profesores: number;
+    partes: number;
+    seguimientos: number;
+    seguimientos_activos: number;
+    partes_pendientes: number;
+  };
+  actividad_reciente: {
+    tipo: 'seguimiento' | 'parte';
+    descripcion: string;
+    detalle: string;
+    empresa: string;
+    fecha: string;
+  }[];
+}
+
 export interface User {
   id: number;
   name: string;
@@ -26,6 +45,7 @@ export interface Empresa {
   tutor_empresa: string;
   email_tutor: string;
   activo?: boolean;
+  foto_perfil?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -40,6 +60,8 @@ export interface EmpresaPayload {
   tutor_empresa: string;
   email_tutor: string;
   activo: boolean;
+  foto_perfil?: File | null;
+  password?: string;
 }
 
 export interface Profesor {

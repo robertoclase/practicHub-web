@@ -1,161 +1,119 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { AdminShell } from '../../shared/components/admin-shell/admin-shell';
-import { ModalShared } from '../../shared/components/modal-shared/modal-shared';
 import { ApiClient } from '../../services/api-client.service';
 import { PaginatedResponse, User } from '../../services/api.types';
+import { AlumnoDialogComponent } from './alumno-dialog';
+
+// Angular Material
+import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
+import { MatSortModule, MatSort } from '@angular/material/sort';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-alumnos-pages',
-  standalone: true,  
-  imports: [CommonModule, ReactiveFormsModule, AdminShell, ModalShared], 
+  standalone: true,
+  imports: [
+    CommonModule,
+    AdminShell,
+    MatTableModule,
+    MatPaginatorModule,
+    MatSortModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatDialogModule,
+    MatSnackBarModule,
+    MatProgressSpinnerModule,
+    MatTooltipModule,
+  ],
   templateUrl: './alumnos-pages.html',
   styleUrl: './alumnos-pages.css',
 })
-export class AlumnosPages implements OnInit, OnDestroy {
+export class AlumnosPages implements OnInit {
   private api = inject(ApiClient);
+  private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
 
-  alumnos: User[] = [];
+  displayedColumns = ['nombre', 'email', 'creado', 'acciones'];
+  dataSource = new MatTableDataSource<User>();
   loading = false;
-  saving = false;
-  modalOpen = false;
-  errorMessage = '';
-  successMessage = '';
-  private successTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  page = 1;
-  perPage = 10;
-  lastPage = 1;
-  total = 0;
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
 
-  form = new FormGroup({
-    name: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
-    email: new FormControl<string>('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
-    password: new FormControl<string>('', { nonNullable: true }),
-  });
+  ngOnInit(): void { this.load(); }
 
-  editingId: number | null = null;
-
-  ngOnInit(): void {
-    this.load();
+  ngAfterViewInit(): void {
+    this.dataSource.paginator = this.paginator;
+    this.dataSource.sort = this.sort;
+    this.dataSource.filterPredicate = (user: User, filter: string) =>
+      `${user.name} ${user.email}`.toLowerCase().includes(filter);
   }
 
-  ngOnDestroy(): void {
-    this.clearSuccessMessage();
+  applyFilter(event: Event): void {
+    this.dataSource.filter = (event.target as HTMLInputElement).value.trim().toLowerCase();
   }
 
-  load(page = 1): void {
+  load(): void {
     this.loading = true;
-    this.page = page;
-    this.api.list<User>('users', { page: this.page, per_page: this.perPage }).subscribe({
+    this.api.list<User>('users', { per_page: '500' }).subscribe({
       next: (res: PaginatedResponse<User>) => {
-        this.alumnos = res.data;
-        this.lastPage = res.last_page;
-        this.total = res.total;
+        this.dataSource.data = res.data;
         this.loading = false;
       },
       error: () => {
-        this.errorMessage = 'No se pudieron cargar los alumnos.';
+        this.snackBar.open('No se pudieron cargar los alumnos.', 'Cerrar', { duration: 4000 });
         this.loading = false;
       },
     });
   }
 
   openCreate(): void {
-    if (this.saving) {
-      return;
-    }
-    this.editingId = null;
-    this.errorMessage = '';
-    this.successMessage = '';
-    this.form.reset({ name: '', email: '', password: '' });
-    this.modalOpen = true;
+    const ref = this.dialog.open(AlumnoDialogComponent, {
+      width: '460px',
+      disableClose: true,
+      data: { alumno: null },
+    });
+    ref.afterClosed().subscribe((payload) => {
+      if (!payload) return;
+      this.api.create<User>('users', payload).subscribe({
+        next: () => { this.snackBar.open('✅ Alumno creado.', 'Cerrar', { duration: 3000 }); this.load(); },
+        error: (err) => this.snackBar.open(err?.error?.message || 'Error al crear el alumno.', 'Cerrar', { duration: 4000 }),
+      });
+    });
   }
 
   openEdit(user: User): void {
-    if (this.saving) {
-      return;
-    }
-    this.editingId = user.id;
-    this.errorMessage = '';
-    this.successMessage = '';
-    this.form.patchValue({ name: user.name, email: user.email, password: '' });
-    this.modalOpen = true;
-  }
-
-  closeModal(): void {
-    this.modalOpen = false;
-    this.saving = false;
-  }
-
-  submit(): void {
-    if (this.saving) {
-      return;
-    }
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.saving = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-    const payload: Record<string, unknown> = { ...this.form.getRawValue() };
-
-    if (this.editingId && !payload['password']) {
-      delete payload['password'];
-    }
-
-    const request = this.editingId
-      ? this.api.update<User>('users', this.editingId, payload)
-      : this.api.create<User>('users', payload);
-
-    request.subscribe({
-      next: () => {
-        this.saving = false;
-        this.modalOpen = false;
-        this.successMessage = this.editingId
-          ? 'El alumno se actualizó correctamente.'
-          : 'El alumno se creó correctamente.';
-        this.startSuccessTimeout();
-        this.load(this.page);
-        this.editingId = null;
-      },
-      error: (err) => {
-        this.saving = false;
-        this.errorMessage = err?.error?.message || 'No se pudo guardar el alumno.';
-      },
+    const ref = this.dialog.open(AlumnoDialogComponent, {
+      width: '460px',
+      disableClose: true,
+      data: { alumno: user },
+    });
+    ref.afterClosed().subscribe((payload) => {
+      if (!payload) return;
+      this.api.update<User>('users', user.id, payload).subscribe({
+        next: () => { this.snackBar.open('✅ Alumno actualizado.', 'Cerrar', { duration: 3000 }); this.load(); },
+        error: (err) => this.snackBar.open(err?.error?.message || 'Error al actualizar.', 'Cerrar', { duration: 4000 }),
+      });
     });
   }
 
   remove(user: User): void {
-    if (this.saving) {
-      return;
-    }
-    if (!confirm(`Eliminar ${user.name}?`)) {
-      return;
-    }
-
+    if (!confirm(`¿Eliminar al alumno "${user.name}"?`)) return;
     this.api.delete('users', user.id).subscribe({
-      next: () => this.load(this.page),
-      error: () => (this.errorMessage = 'No se pudo eliminar el alumno.'),
+      next: () => { this.snackBar.open('Alumno eliminado.', 'Cerrar', { duration: 3000 }); this.load(); },
+      error: () => this.snackBar.open('No se pudo eliminar el alumno.', 'Cerrar', { duration: 4000 }),
     });
   }
-
-  private startSuccessTimeout(): void {
-    this.clearSuccessMessage();
-    this.successTimeout = setTimeout(() => {
-      this.successMessage = '';
-      this.successTimeout = null;
-    }, 3000);
-  }
-
-  private clearSuccessMessage(): void {
-    if (this.successTimeout) {
-      clearTimeout(this.successTimeout);
-      this.successTimeout = null;
-    }
-    this.successMessage = '';
-  }
 }
+

@@ -1,163 +1,99 @@
 <app-admin-shell>
-  <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-start mb-3">
-      <div>
-        <h3 class="text-dark m-0">Empresas</h3>
-        <p class="text-secondary m-0">Gestión de empresas colaboradoras</p>
-      </div>
-      <button class="btn btn-dark" (click)="openCreate()">Nueva Empresa</button>
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Empresas</h2>
+      <p class="page-subtitle">Gestión de empresas colaboradoras del programa FCT</p>
     </div>
+    <button mat-raised-button color="primary" (click)="openCreate()">
+      <mat-icon>add</mat-icon>
+      Nueva Empresa
+    </button>
+  </div>
 
-    <div class="card shadow-sm mb-3">
-      <div class="card-body d-flex justify-content-between align-items-center">
-        <div>
-          <p class="text-secondary small m-0">Total de empresas</p>
-          <h5 class="m-0">{{ total }}</h5>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-          <button
-            class="btn btn-outline-secondary btn-sm"
-            [disabled]="page <= 1 || loading"
-            (click)="load(page - 1)"
-          >
-            Anterior
+  <!-- ─── Search / Filter ─── -->
+  <mat-form-field appearance="outline" class="filter-field">
+    <mat-label>Buscar empresa</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput (keyup)="applyFilter($event)" placeholder="Nombre, CIF, sector, tutor…" />
+  </mat-form-field>
+
+  <!-- ─── Loading spinner ─── -->
+  <div *ngIf="loading" class="spinner-wrapper">
+    <mat-progress-spinner mode="indeterminate" diameter="40"></mat-progress-spinner>
+  </div>
+
+  <!-- ─── Material Table ─── -->
+  <div class="mat-elevation-z2 table-container" *ngIf="!loading">
+    <table mat-table [dataSource]="dataSource" matSort class="w-100">
+
+      <!-- Nombre Column -->
+      <ng-container matColumnDef="nombre">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Empresa</th>
+        <td mat-cell *matCellDef="let empresa">
+          <div class="cell-primary">{{ empresa.nombre }}</div>
+          <div class="cell-secondary">{{ empresa.direccion }}</div>
+        </td>
+      </ng-container>
+
+      <!-- CIF Column -->
+      <ng-container matColumnDef="cif">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>CIF</th>
+        <td mat-cell *matCellDef="let empresa">
+          <code class="cif-badge">{{ empresa.cif }}</code>
+        </td>
+      </ng-container>
+
+      <!-- Sector Column -->
+      <ng-container matColumnDef="sector">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Sector</th>
+        <td mat-cell *matCellDef="let empresa">{{ empresa.sector }}</td>
+      </ng-container>
+
+      <!-- Contacto Column -->
+      <ng-container matColumnDef="contacto">
+        <th mat-header-cell *matHeaderCellDef>Contacto</th>
+        <td mat-cell *matCellDef="let empresa">
+          <div class="cell-primary">{{ empresa.tutor_empresa }}</div>
+          <div class="cell-secondary">{{ empresa.email_tutor }}</div>
+        </td>
+      </ng-container>
+
+      <!-- Estado Column -->
+      <ng-container matColumnDef="estado">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Estado</th>
+        <td mat-cell *matCellDef="let empresa">
+          <mat-chip [color]="empresa.activo ? 'primary' : undefined" highlighted>
+            {{ empresa.activo ? 'Activa' : 'Inactiva' }}
+          </mat-chip>
+        </td>
+      </ng-container>
+
+      <!-- Acciones Column -->
+      <ng-container matColumnDef="acciones">
+        <th mat-header-cell *matHeaderCellDef class="text-end">Acciones</th>
+        <td mat-cell *matCellDef="let empresa" class="text-end">
+          <button mat-icon-button color="primary" (click)="openEdit(empresa)" matTooltip="Editar">
+            <mat-icon>edit</mat-icon>
           </button>
-          <span class="text-secondary small">Página {{ page }} / {{ lastPage }}</span>
-          <button
-            class="btn btn-outline-secondary btn-sm"
-            [disabled]="page >= lastPage || loading"
-            (click)="load(page + 1)"
-          >
-            Siguiente
+          <button mat-icon-button color="warn" (click)="remove(empresa)" matTooltip="Eliminar">
+            <mat-icon>delete</mat-icon>
           </button>
-        </div>
-      </div>
-    </div>
+        </td>
+      </ng-container>
 
-    <div class="card shadow-sm">
-      <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h6 class="m-0">Lista de Empresas</h6>
-        <div class="d-flex align-items-center gap-2">
-          <span class="text-secondary small" *ngIf="loading">Cargando...</span>
-          <button class="btn btn-dark btn-sm" (click)="openCreate()">Nueva Empresa</button>
-        </div>
-      </div>
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
 
-      <div class="table-responsive">
-        <table class="table table-borderless align-middle mb-0">
-          <thead class="border-bottom">
-            <tr class="text-secondary small">
-              <th>Empresa</th>
-              <th>CIF</th>
-              <th>Sector</th>
-              <th>Contacto</th>
-              <th>Estado</th>
-              <th class="text-end">Acciones</th>
-            </tr>
-          </thead>
+      <!-- Empty state -->
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell empty-state" [attr.colspan]="displayedColumns.length">
+          <mat-icon>business_center</mat-icon>
+          <p>No hay empresas que coincidan con el filtro</p>
+        </td>
+      </tr>
+    </table>
 
-          <tbody>
-            <tr *ngIf="!loading && empresas.length === 0">
-              <td colspan="6" class="text-center text-secondary py-4">
-                No hay empresas registradas todavía.
-              </td>
-            </tr>
-            <tr *ngFor="let empresa of empresas">
-              <td>
-                <div class="fw-semibold">{{ empresa.nombre }}</div>
-                <div class="text-secondary small">{{ empresa.direccion }}</div>
-              </td>
-              <td>{{ empresa.cif }}</td>
-              <td>{{ empresa.sector }}</td>
-              <td>
-                <div>{{ empresa.tutor_empresa }}</div>
-                <small class="text-secondary">{{ empresa.email_tutor }}</small>
-              </td>
-              <td>
-                <span
-                  class="badge"
-                  [class.bg-success]="empresa.activo"
-                  [class.bg-secondary]="!empresa.activo"
-                >
-                  {{ empresa.activo ? 'Activa' : 'Inactiva' }}
-                </span>
-              </td>
-              <td class="text-end">
-                <button class="btn btn-sm btn-outline-secondary me-2" (click)="openEdit(empresa)">
-                  Editar
-                </button>
-                <button class="btn btn-sm btn-outline-danger" (click)="remove(empresa)">
-                  Eliminar
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="alert alert-success mt-3" role="alert" *ngIf="successMessage">
-      {{ successMessage }}
-    </div>
-
-    <div class="alert alert-danger mt-3" role="alert" *ngIf="errorMessage">
-      {{ errorMessage }}
-    </div>
-
-    <app-modal-shared
-      [open]="modalOpen"
-      [title]="editingId ? 'Editar empresa' : 'Nueva empresa'"
-      [primaryLabel]="saving ? 'Guardando...' : 'Guardar'"
-      [primaryDisabled]="saving"
-      [secondaryDisabled]="saving"
-      secondaryLabel="Cancelar"
-      [disableBackdropClose]="true"
-      (primary)="submit()"
-      (secondary)="closeModal()"
-    >
-      <form [formGroup]="form" class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label">Nombre</label>
-          <input class="form-control" formControlName="nombre" placeholder="Nombre de la empresa" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">CIF</label>
-          <input class="form-control" formControlName="cif" placeholder="B12345678" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Dirección</label>
-          <input class="form-control" formControlName="direccion" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Teléfono</label>
-          <input class="form-control" formControlName="telefono" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Email</label>
-          <input type="email" class="form-control" formControlName="email" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Sector</label>
-          <input class="form-control" formControlName="sector" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Tutor de empresa</label>
-          <input class="form-control" formControlName="tutor_empresa" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Email del tutor</label>
-          <input type="email" class="form-control" formControlName="email_tutor" />
-        </div>
-        <div class="col-12 form-check">
-          <input class="form-check-input" type="checkbox" id="empresaActiva" formControlName="activo" />
-          <label class="form-check-label" for="empresaActiva">Empresa activa</label>
-        </div>
-      </form>
-
-      <div class="text-danger small mt-2" *ngIf="errorMessage">
-        {{ errorMessage }}
-      </div>
-      <div class="text-secondary small" *ngIf="saving">Guardando cambios...</div>
-    </app-modal-shared>
+    <mat-paginator [pageSizeOptions]="[5, 10, 25, 50]" showFirstLastButtons></mat-paginator>
   </div>
 </app-admin-shell>
+    <div class="d-flex justify-content-between align-items-start mb-3">

@@ -1,186 +1,122 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { AdminShell } from '../../shared/components/admin-shell/admin-shell';
-import { ModalShared } from '../../shared/components/modal-shared/modal-shared';
 import { ApiClient } from '../../services/api-client.service';
-import { PaginatedResponse, Profesor, User } from '../../services/api.types';
+import { PaginatedResponse, Profesor } from '../../services/api.types';
+import { ProfesorDialogComponent } from './profesor-dialog';
+
+// Angular Material
+import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
+import { MatSortModule, MatSort } from '@angular/material/sort';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-profesores-pages',
-  standalone: true,  
-  imports: [CommonModule, ReactiveFormsModule, AdminShell, ModalShared], 
+  standalone: true,
+  imports: [
+    CommonModule,
+    AdminShell,
+    MatTableModule,
+    MatPaginatorModule,
+    MatSortModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatDialogModule,
+    MatChipsModule,
+    MatSnackBarModule,
+    MatProgressSpinnerModule,
+    MatTooltipModule,
+  ],
   templateUrl: './profesores-pages.html',
   styleUrl: './profesores-pages.css',
 })
-export class ProfesoresPages implements OnInit, OnDestroy {
+export class ProfesoresPages implements OnInit {
   private api = inject(ApiClient);
+  private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
 
-  profesores: Profesor[] = [];
-  users: User[] = [];
+  displayedColumns = ['nombre', 'dni', 'departamento', 'especialidad', 'estado', 'acciones'];
+  dataSource = new MatTableDataSource<Profesor>();
   loading = false;
-  saving = false;
-  modalOpen = false;
-  errorMessage = '';
-  successMessage = '';
-  private successTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  page = 1;
-  perPage = 10;
-  lastPage = 1;
-  total = 0;
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
 
-  form = new FormGroup({
-    user_id: new FormControl<number | null>(null, { validators: [Validators.required] }),
-    dni: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
-    departamento: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
-    especialidad: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
-    telefono: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
-    activo: new FormControl<boolean>(true, { nonNullable: true }),
-  });
+  ngOnInit(): void { this.load(); }
 
-  editingId: number | null = null;
-
-  ngOnInit(): void {
-    this.load();
-    this.loadUsers();
+  ngAfterViewInit(): void {
+    this.dataSource.paginator = this.paginator;
+    this.dataSource.sort = this.sort;
+    this.dataSource.filterPredicate = (p: Profesor, filter: string) =>
+      `${p.user?.name} ${p.user?.email} ${p.dni} ${p.departamento} ${p.especialidad}`.toLowerCase().includes(filter);
   }
 
-  ngOnDestroy(): void {
-    this.clearSuccessMessage();
+  applyFilter(event: Event): void {
+    this.dataSource.filter = (event.target as HTMLInputElement).value.trim().toLowerCase();
   }
 
-  load(page = 1): void {
+  load(): void {
     this.loading = true;
-    this.page = page;
-    this.api.list<Profesor>('profesores', { page: this.page, per_page: this.perPage }).subscribe({
+    this.api.list<Profesor>('profesores', { per_page: '500' }).subscribe({
       next: (res: PaginatedResponse<Profesor>) => {
-        this.profesores = res.data;
-        this.lastPage = res.last_page;
-        this.total = res.total;
+        this.dataSource.data = res.data;
         this.loading = false;
       },
       error: () => {
-        this.errorMessage = 'No se pudieron cargar los profesores.';
+        this.snackBar.open('No se pudieron cargar los profesores.', 'Cerrar', { duration: 4000 });
         this.loading = false;
-      },
-    });
-  }
-
-  loadUsers(): void {
-    this.api.list<User>('users', { per_page: 100 }).subscribe({
-      next: (res) => (this.users = res.data),
-      error: () => {
-        this.users = [];
       },
     });
   }
 
   openCreate(): void {
-    if (this.saving) {
-      return;
-    }
-    this.editingId = null;
-    this.errorMessage = '';
-    this.successMessage = '';
-    this.clearSuccessMessage();
-    this.form.reset({
-      user_id: null,
-      dni: '',
-      departamento: '',
-      especialidad: '',
-      telefono: '',
-      activo: true,
+    const ref = this.dialog.open(ProfesorDialogComponent, {
+      width: '560px',
+      disableClose: true,
+      data: { profesor: null },
     });
-    this.modalOpen = true;
+    ref.afterClosed().subscribe((payload) => {
+      if (!payload) return;
+      this.api.create<Profesor>('profesores', payload).subscribe({
+        next: () => { this.snackBar.open('✅ Profesor creado.', 'Cerrar', { duration: 3000 }); this.load(); },
+        error: (err) => this.snackBar.open(err?.error?.message || 'Error al crear el profesor.', 'Cerrar', { duration: 4000 }),
+      });
+    });
   }
 
   openEdit(profesor: Profesor): void {
-    if (this.saving) {
-      return;
-    }
-    this.editingId = profesor.id;
-    this.errorMessage = '';
-    this.successMessage = '';
-    this.clearSuccessMessage();
-    this.form.patchValue({
-      user_id: profesor.user_id,
-      dni: profesor.dni,
-      departamento: profesor.departamento,
-      especialidad: profesor.especialidad,
-      telefono: profesor.telefono,
-      activo: profesor.activo ?? true,
+    const ref = this.dialog.open(ProfesorDialogComponent, {
+      width: '560px',
+      disableClose: true,
+      data: { profesor },
     });
-    this.modalOpen = true;
-  }
-
-  closeModal(): void {
-    this.modalOpen = false;
-    this.saving = false;
-  }
-
-  submit(): void {
-    if (this.saving) {
-      return;
-    }
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.saving = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-    const payload = this.form.getRawValue();
-
-    const request = this.editingId
-      ? this.api.update<Profesor>('profesores', this.editingId, payload)
-      : this.api.create<Profesor>('profesores', payload);
-
-    request.subscribe({
-      next: () => {
-        this.saving = false;
-        this.modalOpen = false;
-        this.successMessage = this.editingId
-          ? 'El profesor se actualizó correctamente.'
-          : 'El profesor se creó correctamente.';
-        this.startSuccessTimeout();
-        this.load(this.page);
-        this.editingId = null;
-      },
-      error: (err) => {
-        this.saving = false;
-        this.errorMessage = err?.error?.message || 'No se pudo guardar el profesor.';
-      },
+    ref.afterClosed().subscribe((payload) => {
+      if (!payload) return;
+      this.api.update<Profesor>('profesores', profesor.id, payload).subscribe({
+        next: () => { this.snackBar.open('✅ Profesor actualizado.', 'Cerrar', { duration: 3000 }); this.load(); },
+        error: (err) => this.snackBar.open(err?.error?.message || 'Error al actualizar.', 'Cerrar', { duration: 4000 }),
+      });
     });
   }
 
   remove(profesor: Profesor): void {
-    if (this.saving) {
-      return;
-    }
-    if (!confirm(`Eliminar ${profesor.user?.name ?? 'profesor'}?`)) {
-      return;
-    }
-
+    const name = profesor.user?.name ?? 'este profesor';
+    if (!confirm(`¿Eliminar a ${name}?`)) return;
     this.api.delete('profesores', profesor.id).subscribe({
-      next: () => this.load(this.page),
-      error: () => (this.errorMessage = 'No se pudo eliminar el profesor.'),
+      next: () => { this.snackBar.open('Profesor eliminado.', 'Cerrar', { duration: 3000 }); this.load(); },
+      error: () => this.snackBar.open('No se pudo eliminar el profesor.', 'Cerrar', { duration: 4000 }),
     });
   }
-
-  private startSuccessTimeout(): void {
-    this.clearSuccessMessage();
-    this.successTimeout = setTimeout(() => {
-      this.successMessage = '';
-      this.successTimeout = null;
-    }, 3000);
-  }
-
-  private clearSuccessMessage(): void {
-    if (this.successTimeout) {
-      clearTimeout(this.successTimeout);
-      this.successTimeout = null;
-    }
-  }
 }
+

@@ -1,187 +1,152 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { AdminShell } from '../../shared/components/admin-shell/admin-shell';
-import { ModalShared } from '../../shared/components/modal-shared/modal-shared';
 import { EmpresasService } from '../../services/empresas.service';
-import { Empresa, EmpresaPayload, PaginatedResponse } from '../../services/api.types';
+import { ApiClient } from '../../services/api-client.service';
+import { Empresa, EmpresaPayload, PaginatedResponse, Profesor } from '../../services/api.types';
+
+// Angular Material
+import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
+import { MatSortModule, MatSort } from '@angular/material/sort';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { EmpresaDialogComponent } from './empresa-dialog';
 
 @Component({
   selector: 'app-empresas-pages',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, AdminShell, ModalShared],
+  imports: [
+    CommonModule,
+    AdminShell,
+    MatTableModule,
+    MatPaginatorModule,
+    MatSortModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatDialogModule,
+    MatChipsModule,
+    MatSnackBarModule,
+    MatProgressSpinnerModule,
+    MatTooltipModule,
+  ],
   templateUrl: './empresas-pages.html',
   styleUrl: './empresas-pages.css',
 })
-export class EmpresasPages implements OnInit, OnDestroy {
+export class EmpresasPages implements OnInit {
   private empresasService = inject(EmpresasService);
+  private apiClient = inject(ApiClient);
+  private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
 
-  empresas: Empresa[] = [];
+  displayedColumns = ['nombre', 'cif', 'sector', 'contacto', 'estado', 'acciones'];
+  dataSource = new MatTableDataSource<Empresa>();
+
+  profesores: Profesor[] = [];
   loading = false;
-  saving = false;
-  modalOpen = false;
-  errorMessage = '';
-  successMessage = '';
 
-  page = 1;
-  perPage = 10;
-  lastPage = 1;
-  total = 0;
-  private successTimeout: ReturnType<typeof setTimeout> | null = null;
-
-  form = new FormGroup({
-    nombre: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
-    cif: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
-    direccion: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
-    telefono: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
-    email: new FormControl<string>('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
-    sector: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
-    tutor_empresa: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
-    email_tutor: new FormControl<string>('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
-    activo: new FormControl<boolean>(true, { nonNullable: true }),
-  });
-
-  editingId: number | null = null;
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
 
   ngOnInit(): void {
+    this.loadProfesores();
     this.load();
   }
 
-  ngOnDestroy(): void {
-    this.clearSuccessMessage();
+  ngAfterViewInit(): void {
+    this.dataSource.paginator = this.paginator;
+    this.dataSource.sort = this.sort;
+    // Custom filter predicate: search in nombre, cif, sector, tutor
+    this.dataSource.filterPredicate = (empresa: Empresa, filter: string) => {
+      const str = `${empresa.nombre} ${empresa.cif} ${empresa.sector} ${empresa.tutor_empresa} ${empresa.email}`.toLowerCase();
+      return str.includes(filter);
+    };
   }
 
-  load(page = 1): void {
+  applyFilter(event: Event): void {
+    const filterValue = (event.target as HTMLInputElement).value;
+    this.dataSource.filter = filterValue.trim().toLowerCase();
+  }
+
+  private loadProfesores(): void {
+    this.apiClient
+      .list<Profesor>('profesores', { only_active: 'true', per_page: '100' })
+      .subscribe({
+        next: (res: PaginatedResponse<Profesor>) => { this.profesores = res.data; },
+        error: () => {},
+      });
+  }
+
+  load(): void {
     this.loading = true;
-    this.page = page;
-    this.empresasService.list(this.page, this.perPage).subscribe({
+    this.empresasService.list(1, 1000).subscribe({
       next: (res: PaginatedResponse<Empresa>) => {
-        this.empresas = res.data;
-        this.page = res.current_page;
-        this.lastPage = res.last_page;
-        this.total = res.total;
+        this.dataSource.data = res.data;
         this.loading = false;
       },
       error: () => {
-        this.errorMessage = 'No se pudieron cargar las empresas.';
+        this.snackBar.open('No se pudieron cargar las empresas.', 'Cerrar', { duration: 4000 });
         this.loading = false;
       },
     });
   }
 
   openCreate(): void {
-    if (this.saving) {
-      return;
-    }
-    this.editingId = null;
-    this.errorMessage = '';
-    this.clearSuccessMessage();
-    this.form.reset({
-      nombre: '',
-      cif: '',
-      direccion: '',
-      telefono: '',
-      email: '',
-      sector: '',
-      tutor_empresa: '',
-      email_tutor: '',
-      activo: true,
+    const dialogRef = this.dialog.open(EmpresaDialogComponent, {
+      width: '600px',
+      disableClose: true,
+      data: { empresa: null, profesores: this.profesores },
     });
-    this.modalOpen = true;
+    dialogRef.afterClosed().subscribe((payload) => {
+      if (!payload) return;
+      this.empresasService.create(payload as EmpresaPayload).subscribe({
+        next: () => {
+          this.snackBar.open('✅ Empresa creada correctamente.', 'Cerrar', { duration: 3000 });
+          this.load();
+        },
+        error: (err) =>
+          this.snackBar.open(err?.error?.message || 'Error al crear la empresa.', 'Cerrar', { duration: 4000 }),
+      });
+    });
   }
 
   openEdit(empresa: Empresa): void {
-    if (this.saving) {
-      return;
-    }
-    this.editingId = empresa.id;
-    this.errorMessage = '';
-    this.clearSuccessMessage();
-    this.form.patchValue({
-      nombre: empresa.nombre,
-      cif: empresa.cif,
-      direccion: empresa.direccion,
-      telefono: empresa.telefono,
-      email: empresa.email,
-      sector: empresa.sector,
-      tutor_empresa: empresa.tutor_empresa,
-      email_tutor: empresa.email_tutor,
-      activo: empresa.activo ?? true,
+    const dialogRef = this.dialog.open(EmpresaDialogComponent, {
+      width: '600px',
+      disableClose: true,
+      data: { empresa, profesores: this.profesores },
     });
-    this.modalOpen = true;
-  }
-
-  closeModal(): void {
-    this.modalOpen = false;
-    this.saving = false;
-  }
-
-  submit(): void {
-    if (this.saving) {
-      return; // Prevent double submit while a request is in flight
-    }
-
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.saving = true;
-    this.errorMessage = '';
-    this.clearSuccessMessage();
-
-    const payload = this.form.getRawValue() as EmpresaPayload;
-    const isEditing = !!this.editingId;
-    const request = isEditing
-      ? this.empresasService.update(this.editingId!, payload)
-      : this.empresasService.create(payload);
-
-    request.subscribe({
-      next: () => {
-        this.saving = false;
-        this.modalOpen = false;
-        this.successMessage = isEditing
-          ? 'La empresa se actualizo correctamente.'
-          : 'La empresa se creo correctamente.';
-        this.startSuccessTimeout();
-        const nextPage = isEditing ? this.page : 1;
-        this.editingId = null;
-        this.load(nextPage);
-      },
-      error: (err) => {
-        this.saving = false;
-        this.errorMessage = err?.error?.message || 'No se pudo guardar la empresa.';
-      },
+    dialogRef.afterClosed().subscribe((payload) => {
+      if (!payload) return;
+      this.empresasService.update(empresa.id, payload as EmpresaPayload).subscribe({
+        next: () => {
+          this.snackBar.open('✅ Empresa actualizada correctamente.', 'Cerrar', { duration: 3000 });
+          this.load();
+        },
+        error: (err) =>
+          this.snackBar.open(err?.error?.message || 'Error al actualizar la empresa.', 'Cerrar', { duration: 4000 }),
+      });
     });
   }
 
   remove(empresa: Empresa): void {
-    if (this.saving) {
-      return;
-    }
-    if (!confirm(`Eliminar ${empresa.nombre}?`)) {
-      return;
-    }
-
+    if (!confirm(`¿Eliminar la empresa "${empresa.nombre}"?`)) return;
     this.empresasService.delete(empresa.id).subscribe({
-      next: () => this.load(this.page),
-      error: () => (this.errorMessage = 'No se pudo eliminar la empresa.'),
+      next: () => {
+        this.snackBar.open('Empresa eliminada.', 'Cerrar', { duration: 3000 });
+        this.load();
+      },
+      error: () => this.snackBar.open('No se pudo eliminar la empresa.', 'Cerrar', { duration: 4000 }),
     });
   }
-
-  private startSuccessTimeout(): void {
-    this.clearSuccessMessage();
-    this.successTimeout = setTimeout(() => {
-      this.successMessage = '';
-      this.successTimeout = null;
-    }, 3000);
-  }
-
-  private clearSuccessMessage(): void {
-    if (this.successTimeout) {
-      clearTimeout(this.successTimeout);
-      this.successTimeout = null;
-    }
-    this.successMessage = '';
-  }
 }
+

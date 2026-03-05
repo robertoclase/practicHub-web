@@ -1,103 +1,119 @@
 <app-admin-shell>
   <div class="container-fluid">
+
     <div class="d-flex justify-content-between align-items-start mb-4">
       <div>
         <h2 class="fw-bold">Panel de Control</h2>
-        <p class="text-muted">Gestión de Alumnos en Prácticas</p>
+        <p class="text-muted">Resumen del sistema en tiempo real</p>
       </div>
-
-      
     </div>
 
-    <div class="row g-3 mb-4">
-      <div class="col-md-3">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">Empresas Activas</h5>
-            <p class="h3 fw-bold">47</p>
+    <!-- Loading -->
+    <div *ngIf="loading" class="text-center py-5 text-muted">
+      <div class="spinner-border spinner-border-sm me-2"></div>
+      Cargando estadísticas...
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+
+    <ng-container *ngIf="!loading && stats">
+
+      <!-- Tarjetas de totales -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <div class="text-muted small mb-1">Empresas Activas</div>
+              <div class="h2 fw-bold mb-0">{{ stats.totales.empresas }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <div class="text-muted small mb-1">Alumnos Registrados</div>
+              <div class="h2 fw-bold mb-0">{{ stats.totales.alumnos }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <div class="text-muted small mb-1">Profesores</div>
+              <div class="h2 fw-bold mb-0">{{ stats.totales.profesores }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <div class="text-muted small mb-1">Partes Diarios</div>
+              <div class="h2 fw-bold mb-0">{{ stats.totales.partes }}</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="col-md-3">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">Alumnos en Prácticas</h5>
-            <p class="h3 fw-bold">156</p>
+      <!-- Segunda fila: métricas adicionales -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-4 col-sm-6">
+          <div class="card shadow-sm border-start border-primary border-3 h-100">
+            <div class="card-body">
+              <div class="text-muted small mb-1">Prácticas Totales</div>
+              <div class="h3 fw-bold mb-0">{{ stats.totales.seguimientos }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4 col-sm-6">
+          <div class="card shadow-sm border-start border-success border-3 h-100">
+            <div class="card-body">
+              <div class="text-muted small mb-1">Prácticas en Curso</div>
+              <div class="h3 fw-bold mb-0 text-success">{{ stats.totales.seguimientos_activos }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4 col-sm-6">
+          <div class="card shadow-sm border-start border-warning border-3 h-100">
+            <div class="card-body">
+              <div class="text-muted small mb-1">Partes Pendientes de Validar</div>
+              <div class="h3 fw-bold mb-0 text-warning">{{ stats.totales.partes_pendientes }}</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="col-md-3">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">Profesores</h5>
-            <p class="h3 fw-bold">23</p>
+      <!-- Actividad reciente -->
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="fw-bold mb-1">Actividad Reciente</h5>
+          <p class="text-muted small mb-3">Últimas acciones registradas en el sistema</p>
+
+          <div *ngIf="stats.actividad_reciente.length === 0" class="text-secondary text-center py-3">
+            No hay actividad reciente.
           </div>
+
+          <ul class="list-group list-group-flush">
+            <li *ngFor="let item of stats.actividad_reciente" class="list-group-item px-0">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <span class="me-2">{{ iconForTipo(item.tipo) }}</span>
+                  <strong>{{ item.descripcion }}</strong>
+                  <span *ngIf="item.detalle" class="text-muted"> — {{ item.detalle }}</span>
+                  <span *ngIf="item.empresa" class="text-muted"> ({{ item.empresa }})</span>
+                </div>
+                <small class="text-muted text-nowrap ms-3">{{ item.fecha | date:'dd/MM/yyyy HH:mm' }}</small>
+              </div>
+            </li>
+          </ul>
         </div>
       </div>
 
-      <div class="col-md-3">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">Partes Diarios</h5>
-            <p class="h3 fw-bold">1,234</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card shadow-sm mb-4">
-      <div class="card-body">
-        <h4 class="fw-bold mb-1">Actividad Reciente</h4>
-        <p class="text-muted mb-3">Últimas acciones en el sistema</p>
-
-        <ul class="list-group list-group-flush">
-          <li class="list-group-item px-0">
-            <strong>Nueva empresa registrada:</strong> TechCorp S.L.
-            <div class="text-muted small">Hace 2 horas</div>
-          </li>
-
-          <li class="list-group-item px-0">
-            <strong>Parte diario completado:</strong> Ana García
-            <div class="text-muted small">Hace 4 horas</div>
-          </li>
-
-          <li class="list-group-item px-0">
-            <strong>Valoración recibida:</strong> Innovate Solutions
-            <div class="text-muted small">Hace 6 horas</div>
-          </li>
-
-          <li class="list-group-item px-0">
-            <strong>Informe mensual generado</strong>
-            <div class="text-muted small">Hace 1 día</div>
-          </li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h4 class="fw-bold mb-1">Próximas Acciones</h4>
-        <p class="text-muted mb-3">Tareas pendientes y recordatorios</p>
-
-        <ul class="list-group list-group-flush">
-          <li class="list-group-item px-0">
-            <input type="checkbox" class="form-check-input me-2" />
-            Revisar informes pendientes
-          </li>
-
-          <li class="list-group-item px-0">
-            <input type="checkbox" class="form-check-input me-2" />
-            Llamar a empresa Innovate Solutions
-          </li>
-
-          <li class="list-group-item px-0">
-            <input type="checkbox" class="form-check-input me-2" />
-            Validar partes diarios del curso DAM
-          </li>
-        </ul>
-      </div>
-    </div>
+    </ng-container>
   </div>
 </app-admin-shell>

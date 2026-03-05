@@ -15,10 +15,16 @@ export class EmpresasService {
   }
 
   create(payload: EmpresaPayload): Observable<Empresa> {
+    if (payload.foto_perfil instanceof File) {
+      return this.api.createMultipart<Empresa>('empresas', payload as unknown as Record<string, unknown>);
+    }
     return this.api.create<Empresa>('empresas', payload);
   }
 
   update(id: number, payload: EmpresaPayload): Observable<Empresa> {
+    if (payload.foto_perfil instanceof File) {
+      return this.api.updateMultipart<Empresa>('empresas', id, payload as unknown as Record<string, unknown>);
+    }
     return this.api.update<Empresa>('empresas', id, payload);
   }
 

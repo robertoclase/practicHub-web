@@ -1,0 +1,75 @@
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 4px 0;
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: #666;
+  margin: 0;
+}
+
+.filter-field {
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 16px;
+}
+
+.spinner-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.table-container {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+}
+
+.cell-primary {
+  font-weight: 500;
+  color: #1a1a2e;
+}
+
+.cell-secondary {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px;
+  color: #aaa;
+}
+
+.empty-state mat-icon {
+  font-size: 48px;
+  height: 48px;
+  width: 48px;
+  margin-bottom: 8px;
+}
+
+.table-row:hover {
+  background: rgba(63, 81, 181, 0.04);
+}
+
+.text-end {
+  text-align: right !important;
+}
+
+.w-100 {
+  width: 100%;
+}

@@ -1,136 +1,92 @@
 <app-admin-shell>
-  <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-start mb-3">
-      <div>
-        <h2 class="fw-bold text-dark">Profesores</h2>
-        <p class="text-muted">Gestión de profesores supervisores</p>
-      </div>
-      <button class="btn btn-dark" (click)="openCreate()">Nuevo Profesor</button>
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Profesores</h2>
+      <p class="page-subtitle">Gestión de profesores supervisores y tutores FCT</p>
     </div>
+    <button mat-raised-button color="primary" (click)="openCreate()">
+      <mat-icon>person_add</mat-icon>
+      Nuevo Profesor
+    </button>
+  </div>
 
-    <div class="card shadow-sm mb-3">
-      <div class="card-body d-flex justify-content-between align-items-center">
-        <div>
-          <small class="text-muted d-block">Total Profesores</small>
-          <span class="fw-semibold">{{ total }}</span>
-        </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-secondary btn-sm" [disabled]="page <= 1 || loading" (click)="load(page - 1)">
-            Anterior
+  <!-- Filter -->
+  <mat-form-field appearance="outline" class="filter-field">
+    <mat-label>Buscar profesor</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput (keyup)="applyFilter($event)" placeholder="Nombre, DNI, departamento o especialidad…" />
+  </mat-form-field>
+
+  <!-- Spinner -->
+  <div *ngIf="loading" class="spinner-wrapper">
+    <mat-progress-spinner mode="indeterminate" diameter="40"></mat-progress-spinner>
+  </div>
+
+  <!-- Material Table -->
+  <div class="mat-elevation-z2 table-container" *ngIf="!loading">
+    <table mat-table [dataSource]="dataSource" matSort class="w-100">
+
+      <!-- Nombre -->
+      <ng-container matColumnDef="nombre">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Profesor</th>
+        <td mat-cell *matCellDef="let p">
+          <div class="cell-primary">{{ p.user?.name }}</div>
+          <div class="cell-secondary">{{ p.user?.email }}</div>
+        </td>
+      </ng-container>
+
+      <!-- DNI -->
+      <ng-container matColumnDef="dni">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>DNI</th>
+        <td mat-cell *matCellDef="let p"><code>{{ p.dni }}</code></td>
+      </ng-container>
+
+      <!-- Departamento -->
+      <ng-container matColumnDef="departamento">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Departamento</th>
+        <td mat-cell *matCellDef="let p">{{ p.departamento }}</td>
+      </ng-container>
+
+      <!-- Especialidad -->
+      <ng-container matColumnDef="especialidad">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Especialidad</th>
+        <td mat-cell *matCellDef="let p">{{ p.especialidad }}</td>
+      </ng-container>
+
+      <!-- Estado -->
+      <ng-container matColumnDef="estado">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let p">
+          <mat-chip [color]="p.activo ? 'primary' : undefined" highlighted>
+            {{ p.activo ? 'Activo' : 'Inactivo' }}
+          </mat-chip>
+        </td>
+      </ng-container>
+
+      <!-- Acciones -->
+      <ng-container matColumnDef="acciones">
+        <th mat-header-cell *matHeaderCellDef class="text-end">Acciones</th>
+        <td mat-cell *matCellDef="let p" class="text-end">
+          <button mat-icon-button color="primary" (click)="openEdit(p)" matTooltip="Editar">
+            <mat-icon>edit</mat-icon>
           </button>
-          <span class="text-secondary small">Página {{ page }} / {{ lastPage }}</span>
-          <button class="btn btn-outline-secondary btn-sm" [disabled]="page >= lastPage || loading" (click)="load(page + 1)">
-            Siguiente
+          <button mat-icon-button color="warn" (click)="remove(p)" matTooltip="Eliminar">
+            <mat-icon>delete</mat-icon>
           </button>
-        </div>
-      </div>
-    </div>
+        </td>
+      </ng-container>
 
-    <div class="card shadow-sm border-0">
-      <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h6 class="m-0">Listado de Profesores</h6>
-        <button class="btn btn-dark btn-sm" (click)="openCreate()" [disabled]="saving">
-          Nuevo Profesor
-        </button>
-      </div>
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
 
-      <div class="table-responsive">
-        <table class="table table-borderless align-middle mb-0">
-          <thead class="border-bottom">
-            <tr class="text-muted small">
-              <th>Nombre</th>
-              <th>DNI</th>
-              <th>Email</th>
-              <th>Departamento</th>
-              <th>Especialidad</th>
-              <th>Estado</th>
-              <th class="text-end">Acciones</th>
-            </tr>
-          </thead>
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell empty-state" [attr.colspan]="displayedColumns.length">
+          <mat-icon>school</mat-icon>
+          <p>No hay profesores que coincidan con el filtro</p>
+        </td>
+      </tr>
+    </table>
 
-          <tbody>
-            <tr *ngIf="!loading && profesores.length === 0">
-              <td colspan="7" class="text-center text-secondary py-4">
-                No hay profesores registrados.
-              </td>
-            </tr>
-            <tr *ngFor="let profesor of profesores">
-              <td>
-                <div class="fw-semibold">{{ profesor.user?.name || 'Usuario' }}</div>
-                <small class="text-secondary">ID usuario: {{ profesor.user_id }}</small>
-              </td>
-              <td>{{ profesor.dni }}</td>
-              <td>{{ profesor.user?.email }}</td>
-              <td>{{ profesor.departamento }}</td>
-              <td>{{ profesor.especialidad }}</td>
-              <td>
-                <span class="badge" [class.bg-success]="profesor.activo" [class.bg-secondary]="!profesor.activo">
-                  {{ profesor.activo ? 'Activo' : 'Inactivo' }}
-                </span>
-              </td>
-              <td class="text-end">
-                <button class="btn btn-sm btn-outline-secondary me-2" (click)="openEdit(profesor)" [disabled]="saving">
-                  Editar
-                </button>
-                <button class="btn btn-sm btn-outline-danger" (click)="remove(profesor)" [disabled]="saving">
-                  Eliminar
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="alert alert-success mt-3" role="alert" *ngIf="successMessage">
-      {{ successMessage }}
-    </div>
-    <div class="alert alert-danger mt-3" role="alert" *ngIf="errorMessage">
-      {{ errorMessage }}
-    </div>
-
-    <app-modal-shared
-      [open]="modalOpen"
-      [title]="editingId ? 'Editar profesor' : 'Nuevo profesor'"
-      [primaryLabel]="saving ? 'Guardando...' : 'Guardar'"
-      [primaryDisabled]="saving"
-      [secondaryDisabled]="saving"
-      secondaryLabel="Cancelar"
-      (primary)="submit()"
-      (secondary)="closeModal()"
-      (backdrop)="closeModal()"
-    >
-      <form [formGroup]="form" class="row g-3">
-        <div class="col-12">
-          <label class="form-label">Usuario asociado</label>
-          <select class="form-select" formControlName="user_id">
-            <option [ngValue]="null">Selecciona un usuario</option>
-            <option *ngFor="let user of users" [ngValue]="user.id">{{ user.name }} ({{ user.email }})</option>
-          </select>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">DNI</label>
-          <input class="form-control" formControlName="dni" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Teléfono</label>
-          <input class="form-control" formControlName="telefono" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Departamento</label>
-          <input class="form-control" formControlName="departamento" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Especialidad</label>
-          <input class="form-control" formControlName="especialidad" />
-        </div>
-        <div class="col-12 form-check">
-          <input class="form-check-input" type="checkbox" id="profesorActivo" formControlName="activo" />
-          <label class="form-check-label" for="profesorActivo">Profesor activo</label>
-        </div>
-      </form>
-      <div class="text-danger small mt-2" *ngIf="errorMessage">{{ errorMessage }}</div>
-      <div class="text-secondary small" *ngIf="saving">Guardando cambios...</div>
-    </app-modal-shared>
+    <mat-paginator [pageSizeOptions]="[5, 10, 25]" showFirstLastButtons></mat-paginator>
   </div>
 </app-admin-shell>
