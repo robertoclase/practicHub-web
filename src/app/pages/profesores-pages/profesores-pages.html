@@ -1,8 +1,7 @@
-<app-admin-shell>
-  <div class="page-header">
+<app-admin-shell>  <div class="page-header">
     <div>
       <h2 class="page-title">Profesores</h2>
-      <p class="page-subtitle">Gestión de profesores supervisores y tutores FCT</p>
+      <p class="page-subtitle">Gesti�n de profesores supervisores y tutores FCT</p>
     </div>
     <button mat-raised-button color="primary" (click)="openCreate()">
       <mat-icon>person_add</mat-icon>
@@ -14,7 +13,7 @@
   <mat-form-field appearance="outline" class="filter-field">
     <mat-label>Buscar profesor</mat-label>
     <mat-icon matPrefix>search</mat-icon>
-    <input matInput (keyup)="applyFilter($event)" placeholder="Nombre, DNI, departamento o especialidad…" />
+    <input matInput (keyup)="applyFilter($event)" placeholder="Nombre, DNI, departamento o especialidad�" />
   </mat-form-field>
 
   <!-- Spinner -->
@@ -88,5 +87,8 @@
     </table>
 
     <mat-paginator [pageSizeOptions]="[5, 10, 25]" showFirstLastButtons></mat-paginator>
+age">{{ errorMessage }}</div>
+      <div class="text-secondary small" *ngIf="saving">Guardando cambios...</div>
+    </app-modal-shared>
   </div>
 </app-admin-shell>

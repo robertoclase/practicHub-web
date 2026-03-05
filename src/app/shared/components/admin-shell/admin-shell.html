@@ -1,61 +1,39 @@
-<mat-sidenav-container class="sidenav-container">
-  <!-- ─────────────────── SIDEBAR ─────────────────── -->
-  <mat-sidenav #sidenav mode="side" opened class="app-sidenav">
-    <!-- Logo + Brand -->
-    <div class="sidenav-header">
-      <img src="/assets/logo_practichub.svg" alt="Logo PracticHub" class="sidenav-logo" />
+<div class="d-flex">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <img src="/assets/logo_practichub.svg" alt="Logo PracticHub" />
+      </div>
       <div>
         <div class="app-title">PracticHub</div>
         <div class="app-subtitle">Gestión de Prácticas</div>
       </div>
     </div>
 
-    <!-- Navigation list -->
-    <mat-nav-list class="sidenav-nav">
+    <div class="menu">
       <a
-        mat-list-item
         *ngFor="let link of links"
+        class="menu-item text-decoration-none"
         [routerLink]="link.path"
-        routerLinkActive="active-link"
+        routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: true }"
-        [matTooltip]="link.description"
-        matTooltipPosition="right"
       >
-        <mat-icon matListItemIcon>{{ link.icon }}</mat-icon>
-        <span matListItemTitle>{{ link.label }}</span>
+        <h6>{{ link.label }}</h6>
+        <p>{{ link.description }}</p>
       </a>
-    </mat-nav-list>
 
-    <!-- Footer -->
-    <div class="sidenav-footer">
-      <button mat-stroked-button class="logout-btn" (click)="logout()">
-        <mat-icon>logout</mat-icon>
-        Cerrar sesión
-      </button>
-      <div class="sidenav-copyright">© 2025 PracticHub</div>
+      <button type="button" class="login-btn mt-3" (click)="logout()">Cerrar Sesión</button>
     </div>
-  </mat-sidenav>
+  </div>
 
-  <!-- ─────────────────── MAIN CONTENT ─────────────────── -->
-  <mat-sidenav-content>
-    <!-- Top toolbar -->
-    <mat-toolbar class="app-toolbar">
-      <button mat-icon-button (click)="sidenav.toggle()" aria-label="Alternar menú">
-        <mat-icon>menu</mat-icon>
-      </button>
-      <span class="toolbar-brand">PracticHub</span>
-      <span class="toolbar-spacer"></span>
-      <mat-icon class="toolbar-user-icon">account_circle</mat-icon>
-      <span class="toolbar-user-label">Administrador</span>
-    </mat-toolbar>
-
-    <!-- Page content -->
-    <div class="page-content">
+  <div class="flex-grow-1 p-4">
+    <main>
       <ng-content></ng-content>
-    </div>
+    </main>
 
-    <footer class="app-footer">
-      © 2025 PracticHub · Todos los derechos reservados.
-    </footer>
-  </mat-sidenav-content>
-</mat-sidenav-container>
+    <div class="footer">
+      © 2025 PracticHub<br />
+      Todos los derechos reservados.
+    </div>
+  </div>
+</div>

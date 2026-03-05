@@ -1,156 +1,122 @@
-/* ── Container ── */
-.sidenav-container {
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 288px;
   height: 100vh;
-  display: flex;
-}
-
-/* ── Sidebar ── */
-.app-sidenav {
-  width: 270px;
-  background: #0d0d2b;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+  background: #fff;
+  overflow-y: auto;
+  z-index: 1000;
 }
 
-.sidenav-header {
+.sidebar-header {
+  padding: 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 20px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: #06061a;
 }
 
-.sidenav-logo {
-  width: 52px;
-  height: 52px;
+.logo {
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  background: #fff;
-  padding: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .app-title {
   font-weight: 700;
-  font-size: 18px;
-  color: #ffffff;
+  font-size: 20px;
+  color: #0a0a0a;
   line-height: 1.2;
 }
 
 .app-subtitle {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-/* Navigation list */
-.sidenav-nav {
-  flex: 1;
-  padding-top: 8px;
-}
-
-/* Override MatNavList item colours */
-.app-sidenav .mat-mdc-list-item {
-  color: rgba(255, 255, 255, 0.78) !important;
-  border-radius: 8px;
-  margin: 2px 8px;
-}
-
-.app-sidenav .mat-mdc-list-item:hover {
-  background: rgba(255, 255, 255, 0.07) !important;
-}
-
-.app-sidenav .mat-mdc-list-item.active-link {
-  background: linear-gradient(90deg, #3a17c9 0%, #6a35f5 100%) !important;
-  color: #fff !important;
-}
-
-.app-sidenav .mat-mdc-list-item.active-link .mat-icon {
-  color: #fff !important;
-}
-
-.app-sidenav .mat-icon {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-}
-
-/* Footer */
-.sidenav-footer {
-  padding: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.logout-btn {
-  width: 100%;
-  color: rgba(255, 255, 255, 0.78) !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
-}
-
-.logout-btn:hover {
-  background: rgba(255, 255, 255, 0.07) !important;
-}
-
-.sidenav-copyright {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.35);
-  text-align: center;
-  margin-top: 8px;
-}
-
-/* ── Toolbar ── */
-.app-toolbar {
-  background: linear-gradient(90deg, #030213 0%, #1a0f8a 100%) !important;
-  color: #fff !important;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.app-toolbar .mat-icon-button {
-  color: #fff !important;
-}
-
-.toolbar-brand {
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: 0.5px;
-  margin-left: 4px;
-}
-
-.toolbar-spacer {
-  flex: 1;
-}
-
-.toolbar-user-icon {
-  font-size: 26px;
-  width: 26px;
-  height: 26px;
-  color: rgba(255, 255, 255, 0.8);
-  margin-right: 6px;
-}
-
-.toolbar-user-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.85);
+  color: #717182;
 }
 
-/* ── Page content ── */
-.page-content {
-  padding: 24px;
-  min-height: calc(100vh - 64px - 48px);
+.menu {
+  flex-grow: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-/* ── Footer ── */
-.app-footer {
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  padding: 12px 24px;
+.menu-item {
+  position: relative;
+  display: block;
+  border-radius: 8px;
+  padding: 12px 12px 12px 40px;
+  cursor: pointer;
+  transition: background 0.3s;
+  color: #0a0a0a;
+}
+
+.menu-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.menu-item.active {
+  background: linear-gradient(90deg, #030213 0%, #130d79 100%);
+  color: #fff;
+}
+
+.menu-item h6 {
+  font-size: 14px;
+  margin: 0;
+}
+
+.menu-item p {
   font-size: 12px;
-  color: #888;
-  text-align: center;
+  color: #717182;
+  margin: 0;
 }
 
+.menu-item.active p {
+  color: #cfcfcf;
+}
 
+.login-btn {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  background: linear-gradient(90deg, #030213 0%, #130d79 100%);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
 
+.login-btn:hover {
+  opacity: 0.92;
+}
 
+.flex-grow-1 {
+  margin-left: 288px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.footer {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  font-size: 13px;
+  color: #717182;
+  margin-top: auto;
+}

@@ -45,7 +45,6 @@ export interface Empresa {
   tutor_empresa: string;
   email_tutor: string;
   activo?: boolean;
-  foto_perfil?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -60,8 +59,6 @@ export interface EmpresaPayload {
   tutor_empresa: string;
   email_tutor: string;
   activo: boolean;
-  foto_perfil?: File | null;
-  password?: string;
 }
 
 export interface Profesor {

@@ -26,32 +26,8 @@ export class ApiClient {
     return this.http.post<T>(`${this.baseUrl}/${resource}`, payload);
   }
 
-  createMultipart<T>(resource: string, payload: Record<string, unknown>): Observable<T> {
-    const fd = this.buildFormData(payload);
-    return this.http.post<T>(`${this.baseUrl}/${resource}`, fd);
-  }
-
   update<T>(resource: string, id: number | string, payload: unknown): Observable<T> {
     return this.http.put<T>(`${this.baseUrl}/${resource}/${id}` || '', payload);
-  }
-
-  updateMultipart<T>(resource: string, id: number | string, payload: Record<string, unknown>): Observable<T> {
-    const fd = this.buildFormData(payload);
-    fd.append('_method', 'PUT'); // Laravel method spoofing
-    return this.http.post<T>(`${this.baseUrl}/${resource}/${id}`, fd);
-  }
-
-  private buildFormData(payload: Record<string, unknown>): FormData {
-    const fd = new FormData();
-    for (const [key, val] of Object.entries(payload)) {
-      if (val === null || val === undefined) continue;
-      if (val instanceof File) {
-        fd.append(key, val, val.name);
-      } else {
-        fd.append(key, String(val));
-      }
-    }
-    return fd;
   }
 
   delete(resource: string, id: number | string): Observable<void> {
