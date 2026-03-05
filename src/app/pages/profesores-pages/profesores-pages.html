@@ -87,8 +87,15 @@
     </table>
 
     <mat-paginator [pageSizeOptions]="[5, 10, 25]" showFirstLastButtons></mat-paginator>
-age">{{ errorMessage }}</div>
-      <div class="text-secondary small" *ngIf="saving">Guardando cambios...</div>
-    </app-modal-shared>
   </div>
+
+  <app-modal-shared
+    [open]="modalOpen"
+    title="Datos del profesor"
+    [primaryDisabled]="saving"
+    (primary)="submit()"
+    (secondary)="closeModal()">
+    <div class="text-danger small mb-2" *ngIf="errorMessage">{{ errorMessage }}</div>
+    <div class="text-secondary small" *ngIf="saving">Guardando cambios...</div>
+  </app-modal-shared>
 </app-admin-shell>
