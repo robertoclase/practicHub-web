@@ -2,13 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminShell } from '../../shared/components/admin-shell/admin-shell';
+import { ModalShared } from '../../shared/components/modal-shared/modal-shared';
 import { ApiClient } from '../../services/api-client.service';
 import { PaginatedResponse, User } from '../../services/api.types';
 
 @Component({
   selector: 'app-alumnos-pages',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, AdminShell],
+  imports: [CommonModule, ReactiveFormsModule, AdminShell, ModalShared],
   templateUrl: './alumnos-pages.html',
   styleUrl: './alumnos-pages.css',
 })

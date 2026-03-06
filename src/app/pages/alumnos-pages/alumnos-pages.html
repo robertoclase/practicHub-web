@@ -1,3 +1,106 @@
 <app-admin-shell>
   <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-start mb-3">
+      <div>
+        <h2 class="fw-bold text-dark">Alumnos</h2>
+        <p class="text-secondary">Gestión de estudiantes registrados en el sistema</p>
+      </div>
+      <button class="btn btn-dark" (click)="openCreate()">+ Nuevo alumno</button>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-secondary small m-0">Total alumnos</p>
+          <h5 class="m-0">{{ total }}</h5>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary btn-sm" [disabled]="page <= 1 || loading" (click)="load(page - 1)">
+            Anterior
+          </button>
+          <span class="text-secondary small">Página {{ page }} / {{ lastPage }}</span>
+          <button class="btn btn-outline-secondary btn-sm" [disabled]="page >= lastPage || loading" (click)="load(page + 1)">
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header bg-white">
+        <h6 class="m-0">Listado de alumnos</h6>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th>Fecha de alta</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="loading">
+              <td colspan="4" class="text-center text-secondary py-4">Cargando...</td>
+            </tr>
+            <tr *ngIf="!loading && alumnos.length === 0">
+              <td colspan="4" class="text-center text-secondary py-4">No hay alumnos registrados.</td>
+            </tr>
+            <tr *ngFor="let alumno of alumnos">
+              <td class="fw-semibold">{{ alumno.name }}</td>
+              <td>{{ alumno.email }}</td>
+              <td>{{ alumno.created_at | date:'dd/MM/yyyy' }}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-secondary me-2" (click)="openEdit(alumno)">Editar</button>
+                <button class="btn btn-sm btn-outline-danger" (click)="remove(alumno)">Eliminar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="alert alert-danger mt-3" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+    <app-modal-shared
+      [open]="modalOpen"
+      [title]="editingId ? 'Editar alumno' : 'Nuevo alumno'"
+      [primaryDisabled]="saving"
+      (primary)="submit()"
+      (secondary)="closeModal()">
+
+      <form [formGroup]="form">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nombre completo <span class="text-danger">*</span></label>
+          <input class="form-control" formControlName="name" placeholder="Nombre del alumno" />
+          <div class="text-danger small mt-1"
+            *ngIf="form.controls.name.invalid && form.controls.name.touched">
+            El nombre es obligatorio.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+          <input class="form-control" type="email" formControlName="email" placeholder="alumno@ejemplo.com" />
+          <div class="text-danger small mt-1"
+            *ngIf="form.controls.email.invalid && form.controls.email.touched">
+            Introduce un email válido.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            Contraseña
+            <span class="text-secondary small">{{ editingId ? '(dejar vacío para no cambiar)' : '*' }}</span>
+          </label>
+          <input class="form-control" type="password" formControlName="password" placeholder="Contraseña" />
+        </div>
+
+        <div class="text-danger small" *ngIf="errorMessage">{{ errorMessage }}</div>
+        <div class="text-secondary small" *ngIf="saving">Guardando...</div>
+      </form>
+    </app-modal-shared>
+  </div>
+</app-admin-shell>
+

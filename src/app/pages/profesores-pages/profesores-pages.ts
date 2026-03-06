@@ -1,51 +1,23 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminShell } from '../../shared/components/admin-shell/admin-shell';
 import { ModalShared } from '../../shared/components/modal-shared/modal-shared';
 import { ApiClient } from '../../services/api-client.service';
 import { PaginatedResponse, Profesor } from '../../services/api.types';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-profesores-pages',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    AdminShell,
-    ModalShared,
-    MatTableModule,
-    MatSortModule,
-    MatPaginatorModule,
-    MatButtonModule,
-    MatIconModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatProgressSpinnerModule,
-    MatChipsModule,
-    MatTooltipModule,
-  ],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, AdminShell, ModalShared],
   templateUrl: './profesores-pages.html',
   styleUrl: './profesores-pages.css',
 })
-export class ProfesoresPages implements OnInit, AfterViewInit, OnDestroy {
+export class ProfesoresPages implements OnInit, OnDestroy {
   private api = inject(ApiClient);
 
-  @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-
-  dataSource = new MatTableDataSource<Profesor>([]);
-  displayedColumns = ['nombre', 'dni', 'departamento', 'especialidad', 'estado', 'acciones'];
+  profesores: Profesor[] = [];
+  searchTerm = '';
 
   loading = false;
   saving = false;
@@ -55,6 +27,9 @@ export class ProfesoresPages implements OnInit, AfterViewInit, OnDestroy {
   editingId: number | null = null;
 
   form = new FormGroup({
+    name: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
+    password: new FormControl('', { nonNullable: true }),
     dni: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     departamento: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     especialidad: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
@@ -66,23 +41,26 @@ export class ProfesoresPages implements OnInit, AfterViewInit, OnDestroy {
     this.load();
   }
 
-  ngAfterViewInit(): void {
-    this.dataSource.sort = this.sort;
-    this.dataSource.paginator = this.paginator;
-  }
-
   ngOnDestroy(): void {}
+
+  get filtered(): Profesor[] {
+    const term = this.searchTerm.toLowerCase();
+    if (!term) return this.profesores;
+    return this.profesores.filter(
+      (p) =>
+        p.user?.name?.toLowerCase().includes(term) ||
+        p.dni?.toLowerCase().includes(term) ||
+        p.departamento?.toLowerCase().includes(term) ||
+        p.especialidad?.toLowerCase().includes(term),
+    );
+  }
 
   load(): void {
     this.loading = true;
     this.api.list<Profesor>('profesores', { per_page: 100 }).subscribe({
       next: (res: PaginatedResponse<Profesor>) => {
-        this.dataSource.data = res.data;
+        this.profesores = res.data;
         this.loading = false;
-        Promise.resolve().then(() => {
-          if (this.sort) this.dataSource.sort = this.sort;
-          if (this.paginator) this.dataSource.paginator = this.paginator;
-        });
       },
       error: () => {
         this.errorMessage = 'No se pudieron cargar los profesores.';
@@ -91,22 +69,26 @@ export class ProfesoresPages implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  applyFilter(event: Event): void {
-    const filterValue = (event.target as HTMLInputElement).value;
-    this.dataSource.filter = filterValue.trim().toLowerCase();
-  }
-
   openCreate(): void {
     this.editingId = null;
     this.errorMessage = '';
-    this.form.reset({ dni: '', departamento: '', especialidad: '', telefono: '', activo: true });
+    this.form.reset({ name: '', email: '', password: '', dni: '', departamento: '', especialidad: '', telefono: '', activo: true });
     this.modalOpen = true;
   }
 
   openEdit(profesor: Profesor): void {
     this.editingId = profesor.id;
     this.errorMessage = '';
-    this.form.patchValue({ ...profesor, activo: profesor.activo ?? true });
+    this.form.patchValue({
+      name: profesor.user?.name ?? '',
+      email: profesor.user?.email ?? '',
+      password: '',
+      dni: profesor.dni,
+      departamento: profesor.departamento,
+      especialidad: profesor.especialidad,
+      telefono: profesor.telefono,
+      activo: profesor.activo ?? true,
+    });
     this.modalOpen = true;
   }
 
@@ -147,4 +129,3 @@ export class ProfesoresPages implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 }
-
